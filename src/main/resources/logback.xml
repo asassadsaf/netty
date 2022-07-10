@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration scan="true" scanPeriod="60 seconds" debug="false">
+<configuration xmlns="http://ch.qos.logback/xml/ns/logback"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://ch.qos.logback/xml/ns/logback
+               https://raw.githubusercontent.com/enricopulatzo/logback-XSD/master/src/main/xsd/logback.xsd"
+               scan="true" scanPeriod="60 seconds" debug="false">
     <!--
     日志输出格式：
         %-5level
@@ -14,7 +18,7 @@
 
     <!--定义日志文件保存路径属性-->
     <property name="log_home" value="E:/Example/Java/netty/logs"/>
-    <property name="pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{50} %line - %msg%n"/>
+    <property name="pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %thread %-5level %logger{50} %line - %msg%n"/>
 
     <!--控制台日志输出的 appender-->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
