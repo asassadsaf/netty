@@ -1,5 +1,6 @@
 package com.fkp.netty.protocol;
 
+import com.fkp.netty.config.Config;
 import com.fkp.netty.message.Message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -35,7 +36,7 @@ public class MessageCodecSharable extends MessageToMessageCodec<ByteBuf, Message
         //2.1字节的版本号
         out.writeByte(1);
         //3.1字节的序列化方式：0 jdk，1 json
-        out.writeByte(0);
+        out.writeByte(Config.getSerializerAlgorithm().ordinal());
         //4.1字节的指令类型
         out.writeByte(msg.getMessageType());
         //5.4字节的消息id
@@ -43,10 +44,7 @@ public class MessageCodecSharable extends MessageToMessageCodec<ByteBuf, Message
         //6.无意义，对齐填充
         out.writeByte(0xff);
         //jdk方式序列化消息内容
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(byteArrayOutputStream);
-        oos.writeObject(msg);
-        byte[] bytes = byteArrayOutputStream.toByteArray();
+        byte[] bytes = Config.getSerializerAlgorithm().serializer(msg);
         //7.4字节内容长度
         out.writeInt(bytes.length);
         //8.len字节的内容
@@ -65,10 +63,9 @@ public class MessageCodecSharable extends MessageToMessageCodec<ByteBuf, Message
         int len = in.readInt();
         byte[] data = new byte[len];
         in.readBytes(data);
-        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
-        Message message = (Message) ois.readObject();
+        Message message = Serializer.Algorithm.values()[serializerType].deserializer(Message.getMessageClass(messageType), data);
         out.add(message);
-        log.info("magicNum:{},version:{},serializerType:{},messageType:{},sequenceId:{},len:{},data:{}",magicNum,version,serializerType,messageType,sequenceId,len,data);
-        log.info("message:{}",message);
+//        log.info("magicNum:{},version:{},serializerType:{},messageType:{},sequenceId:{},len:{},data:{}",magicNum,version,serializerType,messageType,sequenceId,len,data);
+//        log.info("message:{}",message);
     }
 }
