@@ -2,6 +2,8 @@ package com.fkp.netty.protocol;
 
 
 import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -51,6 +53,27 @@ public interface Serializer {
             @Override
             public <T> T deserializer(Class<T> clazz, byte[] bytes) {
                 return JSON.parseObject(new String(bytes,StandardCharsets.UTF_8),clazz);
+            }
+        },
+        Jackson{
+            @Override
+            public <T> byte[] serializer(T object) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    return objectMapper.writeValueAsString(object).getBytes(StandardCharsets.UTF_8);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("serializer fail",e);
+                }
+            }
+
+            @Override
+            public <T> T deserializer(Class<T> clazz, byte[] bytes) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    return objectMapper.readValue(new String(bytes, StandardCharsets.UTF_8),clazz);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("deserializer fail",e);
+                }
             }
         }
     }
