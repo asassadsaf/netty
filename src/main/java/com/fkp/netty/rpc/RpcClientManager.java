@@ -9,8 +9,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.Promise;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -32,11 +37,24 @@ public class RpcClientManager {
                 getChannel().writeAndFlush(request);
                 DefaultPromise<Object> promise = new DefaultPromise<>(getChannel().eventLoop());
                 RpcResponseMessageHandler.promiseMap.put(sequenceId, promise);
-                promise.wait();
+                //异步方式
+//                promise.addListener(new GenericFutureListener<Future<? super Object>>() {
+//                    @Override
+//                    public void operationComplete(Future<? super Object> future) throws Exception {
+//                        if(future.isSuccess()){
+//                            getChannel().close();
+//                        }else {
+//                            throw new RuntimeException(future.cause());
+//                        }
+//                    }
+//                });
+//                return promise.get();
+                promise.await();
                 if (promise.isSuccess()) {
                     getChannel().close();
                     return promise.getNow();
                 } else {
+                    getChannel().close();
                     throw new RuntimeException(promise.cause());
                 }
             }
@@ -60,7 +78,7 @@ public class RpcClientManager {
 
     private static void initChannel(){
         NioEventLoopGroup group = new NioEventLoopGroup();
-        LoggingHandler loggingHandler = new LoggingHandler();
+        LoggingHandler loggingHandler = new LoggingHandler(LogLevel.INFO);
         MessageCodecSharable messageCodecSharable = new MessageCodecSharable();
         RpcResponseMessageHandler rpcResponseMessageHandler = new RpcResponseMessageHandler();
         try {
@@ -70,7 +88,7 @@ public class RpcClientManager {
             bootstrap.handler(new ChannelInitializer<NioSocketChannel>() {
                 @Override
                 protected void initChannel(NioSocketChannel ch) throws Exception {
-                    ch.pipeline().addLast(new MyFrameDecoder());
+                    ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(6*1024,12,4,0,0));
                     ch.pipeline().addLast(loggingHandler);
                     ch.pipeline().addLast(messageCodecSharable);
                     ch.pipeline().addLast(rpcResponseMessageHandler);
