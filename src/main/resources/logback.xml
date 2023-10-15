@@ -40,16 +40,16 @@
         </encoder>
     </appender>
 
-    <logger name="io.netty.handler.logging.LoggingHandler" level="INFO" additivity="false">
-        <appender-ref ref="console"/>
-    </logger>
-    <logger name="com.fkp" level="INFO" additivity="false">
-        <appender-ref ref="console"/>
-    </logger>
+<!--    <logger name="io.netty.handler.logging.LoggingHandler" level="INFO" additivity="false">-->
+<!--        <appender-ref ref="console"/>-->
+<!--    </logger>-->
+<!--    <logger name="com.fkp" level="DEBUG" additivity="false">-->
+<!--        <appender-ref ref="console"/>-->
+<!--    </logger>-->
     <!--root logger 配置-->
-    <root level="ERROR">
+    <root level="TRACE">
         <appender-ref ref="console"/>
-        <appender-ref ref="file"/>
+<!--        <appender-ref ref="file"/>-->
     </root>
 
 </configuration>
