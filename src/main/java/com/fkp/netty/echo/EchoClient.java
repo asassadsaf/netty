@@ -43,7 +43,7 @@ public class EchoClient {
                         });
                     }
                 })
-                .connect(new InetSocketAddress("localhost", 18001))
+                .connect(new InetSocketAddress("localhost", 18002))
                 .sync()
                 .channel();
 

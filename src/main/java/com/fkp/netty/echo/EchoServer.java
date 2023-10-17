@@ -3,6 +3,7 @@ package com.fkp.netty.echo;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -12,7 +13,9 @@ import io.netty.handler.codec.haproxy.HAProxyMessage;
 import io.netty.handler.codec.haproxy.HAProxyMessageDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 
@@ -26,8 +29,9 @@ public class EchoServer {
                     @Override
                     protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
                         nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
-                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
-                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
+                        nioSocketChannel.pipeline().addLast("myHaProxyDecoder", new MyHaProxyDecoder());
+//                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
+//                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
                         nioSocketChannel.pipeline().addLast(new ChannelInboundHandlerAdapter(){
 
                             @Override
@@ -61,5 +65,26 @@ public class EchoServer {
                         });
                     }
                 }).bind(9000);
+
+
+    }
+    static class MyHaProxyDecoder extends ChannelInboundHandlerAdapter {
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (ctx.channel().attr(AttributeKey.newInstance("haProxyHeader")).get() == null) {
+                ByteBuf byteBuf = (ByteBuf) msg;
+                String headerContent = byteBuf.toString(StandardCharsets.UTF_8);
+                int i = StringUtils.countMatches(headerContent, "PROXY");
+                for (int j = 0; j < i; j++) {
+                    ctx.channel().pipeline().addAfter("myHaProxyDecoder","haProxyDecoder-" + j, new HAProxyMessageDecoder());
+                }
+                ctx.fireChannelRead(msg);
+                ctx.channel().attr(AttributeKey.valueOf("haProxyHeader")).set("true");
+            }else {
+                ctx.channel().pipeline().remove(this);
+            }
+
+        }
     }
 }
