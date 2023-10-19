@@ -24,7 +24,7 @@ public class EchoClient {
                 .handler(new ChannelInitializer<NioSocketChannel>() {
                     @Override
                     protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
-                        nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
+                        nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
                         //相当于StringEncoder
                         nioSocketChannel.pipeline().addLast(new ChannelOutboundHandlerAdapter(){
                             @Override

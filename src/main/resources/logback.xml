@@ -47,7 +47,7 @@
 <!--        <appender-ref ref="console"/>-->
 <!--    </logger>-->
     <!--root logger 配置-->
-    <root level="TRACE">
+    <root level="INFO">
         <appender-ref ref="console"/>
 <!--        <appender-ref ref="file"/>-->
     </root>

@@ -28,7 +28,7 @@ public class EchoServer {
                 .childHandler(new ChannelInitializer<NioSocketChannel>() {
                     @Override
                     protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
-                        nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
+                        nioSocketChannel.pipeline().addLast("loggingHandler", new LoggingHandler(LogLevel.INFO));
                         nioSocketChannel.pipeline().addLast("myHaProxyDecoder", new MyHaProxyDecoder());
 //                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
 //                        nioSocketChannel.pipeline() .addLast(new HAProxyMessageDecoder());
@@ -54,7 +54,7 @@ public class EchoServer {
                                     ByteBuf response = ctx.alloc().buffer();
                                     response.writeBytes(byteBuf);
                                     ctx.writeAndFlush(response);
-                                    response.release();
+//                                    response.release();
                                 }
                             }
 
@@ -68,23 +68,35 @@ public class EchoServer {
 
 
     }
-    static class MyHaProxyDecoder extends ChannelInboundHandlerAdapter {
+    static class MyHaProxyDecoder extends HAProxyMessageDecoder {
+        long initTime = System.currentTimeMillis();
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            if (ctx.channel().attr(AttributeKey.newInstance("haProxyHeader")).get() == null) {
-                ByteBuf byteBuf = (ByteBuf) msg;
-                String headerContent = byteBuf.toString(StandardCharsets.UTF_8);
-                int i = StringUtils.countMatches(headerContent, "PROXY");
-                for (int j = 0; j < i; j++) {
-                    ctx.channel().pipeline().addAfter("myHaProxyDecoder","haProxyDecoder-" + j, new HAProxyMessageDecoder());
-                }
-                ctx.fireChannelRead(msg);
-                ctx.channel().attr(AttributeKey.valueOf("haProxyHeader")).set("true");
+//            ctx.channel().attr(AttributeKey.valueOf("haProxyHeader")).get() == null ||
+            if ((System.currentTimeMillis() - (1000 * 10)) < initTime) {
+//                ByteBuf byteBuf = (ByteBuf) msg;
+//                String headerContent = byteBuf.toString(StandardCharsets.UTF_8);
+//                int i = StringUtils.countMatches(headerContent, "PROXY");
+//                for (int j = 0; j < i; j++) {
+//                    ctx.channel().pipeline().addAfter("myHaProxyDecoder","haProxyDecoder-" + j, new HAProxyMessageDecoder());
+//                }
+                ctx.channel().pipeline().addAfter("myHaProxyDecoder", "haProxyMessageDecoder1", new HAProxyMessageDecoder());
+                ctx.channel().pipeline().addAfter("myHaProxyDecoder", "haProxyMessageDecoder1", new HAProxyMessageDecoder());
+                super.channelRead(ctx, msg);
+                ctx.channel().pipeline().addAfter("loggingHandler", "myHaProxyDecoder", this);
+//                ctx.channel().attr(AttributeKey.valueOf("haProxyHeader")).set("true");
             }else {
+//                if (ctx.channel().pipeline().get(HAProxyMessageDecoder.class) != null) {
+//                    ctx.channel().pipeline().remove(HAProxyMessageDecoder.class);
+//                }
+                ByteBuf byteBuf = super.internalBuffer();
+                byteBuf.writeBytes((ByteBuf) msg);
+                ctx.fireChannelRead(byteBuf);
                 ctx.channel().pipeline().remove(this);
             }
-
         }
+
+
     }
 }
